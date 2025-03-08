@@ -75,3 +75,17 @@
   }
 }
 
+
+@keyframes blink {
+  0% { opacity: 0.3; }
+  50% { opacity: 1; }
+  100% { opacity: 0.3; }
+}
+
+.dot-loader::after {
+  content: "● ● ●";
+  font-size: 1rem;
+  display: inline-block;
+  letter-spacing: 1px;
+  animation: blink 1.5s infinite ease-in-out;
+}
