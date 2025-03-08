@@ -16,6 +16,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 export default function ChatPage() {
   const [messages, setMessages] = useState<{ role: string; content: string }[]>([]);
   const [input, setInput] = useState("");
+  const [loading, setLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const genAI = new GoogleGenerativeAI(process.env.NEXT_PUBLIC_GEMINI_API_KEY!);
@@ -33,15 +34,19 @@ export default function ChatPage() {
     const userMessage = { role: "user", content: input };
     setMessages((prev) => [...prev, userMessage]);
     setInput("");
+    setLoading(true); // Show loader
 
     try {
       const result = await model.generateContent(input);
       const response = await result.response;
       const botMessage = { role: "assistant", content: response?.text?.() || "Error: No response" };
+
       setMessages((prev) => [...prev, botMessage]);
     } catch (error) {
       console.error("Error fetching response:", error);
       setMessages((prev) => [...prev, { role: "assistant", content: "Internal Server Error. Please try again later." }]);
+    } finally {
+      setLoading(false); // Hide loader
     }
   };
 
@@ -54,7 +59,7 @@ export default function ChatPage() {
       </header>
 
       <main className="flex-1 container py-6 flex justify-center">
-        <Card className="w-full max-w-3xl h-[75vh] flex flex-col shadow-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 rounded-xl">
+        <Card className="w-full max-w-5xl h-[85vh] flex flex-col shadow-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 rounded-xl">
           <CardHeader>
             <CardTitle className="text-xl text-gray-900 dark:text-white">Chat with AI Assistant</CardTitle>
           </CardHeader>
@@ -75,9 +80,8 @@ export default function ChatPage() {
                       </Avatar>
                     )}
 
-                    <div className={`rounded-lg px-4 py-2 text-sm shadow-md ${
-                      message.role === "user" ? "bg-blue-600 text-white" : "bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white"
-                    }`}>
+                    <div className={`rounded-lg px-4 py-2 text-sm shadow-md ${message.role === "user" ? "bg-blue-600 text-white" : "bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white"
+                      }`}>
                       <ReactMarkdown
                         remarkPlugins={[remarkGfm, remarkBreaks]}
                         components={{
@@ -108,14 +112,29 @@ export default function ChatPage() {
                 </div>
               ))
             )}
+
+            {/* Dot Loader Effect */}
+            {loading && (
+              <div className="flex justify-start">
+                <div className="flex items-center gap-3">
+                  <Avatar>
+                    <AvatarFallback className="bg-emerald-600 text-white">G</AvatarFallback>
+                  </Avatar>
+                  <div className="bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white px-4 py-2 rounded-lg text-sm shadow-md">
+                    <span className="dot-loader"></span>
+                  </div>
+                </div>
+              </div>
+            )}
+
             <div ref={messagesEndRef} />
           </CardContent>
 
           <CardFooter className="border-t p-4 bg-gray-100 dark:bg-gray-900 rounded-b-xl">
             <form onSubmit={(e) => {
-                e.preventDefault();
-                handleSend();
-              }} className="flex w-full gap-2">
+              e.preventDefault();
+              handleSend();
+            }} className="flex w-full gap-2">
               <Input
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
